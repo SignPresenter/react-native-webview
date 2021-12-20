@@ -303,7 +303,8 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
 
   render() {
 
-    throw ("CUSTOMER WEB VIEW ANDROID")
+    console.log("WEB VIEW ANDROID")
+
 
     const {
       onMessage,

@@ -10,7 +10,7 @@ export type WebViewProps = IOSWebViewProps & AndroidWebViewProps;
 // similar interface than the native ones have.
 const WebView: React.FunctionComponent<WebViewProps> = () => {
   console.log("******************CUSTOM WEB VIEW")
-  throw ("*****CUSTOM WEB VIEW")
+  //throw ("*****CUSTOM WEB VIEW")
   return (<View style={{
     alignSelf: 'flex-start',
     borderColor: 'rgb(255, 0, 0)',
