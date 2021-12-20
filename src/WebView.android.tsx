@@ -85,7 +85,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
 
   webViewRef = React.createRef<NativeWebViewAndroid>();
 
-  messagingModuleName = `WebViewMessageHandler${uniqueRef+=1}`;
+  messagingModuleName = `WebViewMessageHandler${uniqueRef += 1}`;
 
   componentDidMount = () => {
     BatchedBridge.registerCallableModule(this.messagingModuleName, this);
@@ -146,25 +146,25 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
 
   clearFormData = () => {
     UIManager.dispatchViewManagerCommand(
-       this.getWebViewHandle(),
-       this.getCommands().clearFormData,
-        undefined,
+      this.getWebViewHandle(),
+      this.getCommands().clearFormData,
+      undefined,
     );
   }
 
   clearCache = (includeDiskFiles: boolean) => {
     UIManager.dispatchViewManagerCommand(
-       this.getWebViewHandle(),
-       this.getCommands().clearCache,
-       [includeDiskFiles],
+      this.getWebViewHandle(),
+      this.getCommands().clearCache,
+      [includeDiskFiles],
     );
   };
 
   clearHistory = () => {
     UIManager.dispatchViewManagerCommand(
-       this.getWebViewHandle(),
-       this.getCommands().clearHistory,
-        undefined,
+      this.getWebViewHandle(),
+      this.getCommands().clearHistory,
+      undefined,
     );
   };
 
@@ -302,6 +302,9 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
   };
 
   render() {
+
+    throw ("CUSTOMER WEB VIEW ANDROID")
+
     const {
       onMessage,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
