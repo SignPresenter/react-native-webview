@@ -19,6 +19,7 @@ import {
 import {
   WebViewErrorEvent,
   WebViewHttpErrorEvent,
+  WebViewInterceptEvent,
   WebViewMessageEvent,
   WebViewNavigationEvent,
   WebViewProgressEvent,
@@ -229,6 +230,13 @@ class WebView extends React.Component<MacOSWebViewProps, State> {
     }
   };
 
+  onIntercept = (event: WebViewInterceptEvent) => {
+    const { onIntercept } = this.props;
+    if (onIntercept) {
+      onIntercept(event);
+    }
+  };
+
   onLoadingProgress = (event: WebViewProgressEvent) => {
     const { onLoadProgress } = this.props;
     if (onLoadProgress) {
@@ -275,6 +283,7 @@ class WebView extends React.Component<MacOSWebViewProps, State> {
   render() {
     const {
       nativeConfig = {},
+      onIntercept,
       onMessage,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
       originWhitelist,
@@ -328,6 +337,7 @@ class WebView extends React.Component<MacOSWebViewProps, State> {
         onLoadingStart={this.onLoadingStart}
         onHttpError={this.onHttpError}
         onMessage={this.onMessage}
+        onIntercept={this.onIntercept}
         onScroll={this.props.onScroll}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onContentProcessDidTerminate={this.onContentProcessDidTerminate}

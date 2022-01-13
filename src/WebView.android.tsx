@@ -31,6 +31,7 @@ import {
   NativeWebViewAndroid,
   State,
   RNCWebViewUIManagerAndroid,
+  WebViewInterceptEvent,
 } from './WebViewTypes';
 
 import styles from './WebView.styles';
@@ -85,7 +86,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
 
   webViewRef = React.createRef<NativeWebViewAndroid>();
 
-  messagingModuleName = `WebViewMessageHandler${uniqueRef += 1}`;
+  messagingModuleName = `WebViewMessageHandler${uniqueRef+=1}`;
 
   componentDidMount = () => {
     BatchedBridge.registerCallableModule(this.messagingModuleName, this);
@@ -144,27 +145,35 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     );
   };
 
-  clearFormData = () => {
+  postInterface = (data: string) => {
     UIManager.dispatchViewManagerCommand(
       this.getWebViewHandle(),
-      this.getCommands().clearFormData,
-      undefined,
+      this.getCommands().postIntercept,
+      [String(data)],
+    );
+  };
+
+  clearFormData = () => {
+    UIManager.dispatchViewManagerCommand(
+       this.getWebViewHandle(),
+       this.getCommands().clearFormData,
+        undefined,
     );
   }
 
   clearCache = (includeDiskFiles: boolean) => {
     UIManager.dispatchViewManagerCommand(
-      this.getWebViewHandle(),
-      this.getCommands().clearCache,
-      [includeDiskFiles],
+       this.getWebViewHandle(),
+       this.getCommands().clearCache,
+       [includeDiskFiles],
     );
   };
 
   clearHistory = () => {
     UIManager.dispatchViewManagerCommand(
-      this.getWebViewHandle(),
-      this.getCommands().clearHistory,
-      undefined,
+       this.getWebViewHandle(),
+       this.getCommands().clearHistory,
+        undefined,
     );
   };
 
@@ -269,6 +278,22 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     }
   };
 
+  /**
+   * on intercept
+   * @param event 
+   */
+  onIntercept = (event: WebViewInterceptEvent) => {
+    const { onInterceptCallback } = this.props;
+    if (onInterceptCallback) {
+      const result = onInterceptCallback(event);
+      const { nativeEvent} = event;
+      const {lockIdentifier} = nativeEvent;
+      //if(result.offline){
+        NativeModules.RNCWebView.onInterceptCallback(result,lockIdentifier);
+      //}    
+    }
+  };
+
   onLoadingProgress = (event: WebViewProgressEvent) => {
     const { onLoadProgress } = this.props;
     const { nativeEvent: { progress } } = event;
@@ -302,11 +327,8 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
   };
 
   render() {
-
-    console.log("WEB VIEW ANDROID")
-
-
     const {
+      onIntercept,
       onMessage,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
       originWhitelist,
@@ -373,6 +395,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         onHttpError={this.onHttpError}
         onRenderProcessGone={this.onRenderProcessGone}
         onMessage={this.onMessage}
+        onIntercept={this.onIntercept}
         onShouldStartLoadWithRequest={this.onShouldStartLoadWithRequest}
         ref={this.webViewRef}
         // TODO: find a better way to type this.

@@ -12,7 +12,7 @@ import {
   NativeScrollEvent,
 } from 'react-native';
 
-type WebViewCommands = 'goForward' | 'goBack' | 'reload' | 'stopLoading' | 'postMessage' | 'injectJavaScript' | 'loadUrl' | 'requestFocus';
+type WebViewCommands = 'goForward' | 'goBack' | 'reload' | 'stopLoading' | 'postMessage' | 'injectJavaScript' | 'loadUrl' | 'requestFocus' | 'postIntercept';
 
 type AndroidWebViewCommands = 'clearHistory' | 'clearCache' | 'clearFormData';
 
@@ -127,6 +127,18 @@ export interface WebViewMessage extends WebViewNativeEvent {
   data: string;
 }
 
+export interface WebViewIntercept extends WebViewNativeEvent {
+  data: string;
+}
+
+export interface OnInterceptReceive {
+  file:string,
+  offline:boolean,
+  mimetype:string,
+  url:string,
+  cache:boolean
+}
+
 export interface WebViewError extends WebViewNativeEvent {
   /**
    * `domain` is only used on iOS and macOS
@@ -158,6 +170,8 @@ export type ShouldStartLoadRequestEvent = NativeSyntheticEvent<ShouldStartLoadRe
 export type FileDownloadEvent = NativeSyntheticEvent<FileDownload>;
 
 export type WebViewMessageEvent = NativeSyntheticEvent<WebViewMessage>;
+
+export type WebViewInterceptEvent = NativeSyntheticEvent<WebViewIntercept>;
 
 export type WebViewErrorEvent = NativeSyntheticEvent<WebViewError>;
 
@@ -292,6 +306,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
   onLoadingStart: (event: WebViewNavigationEvent) => void;
   onHttpError: (event: WebViewHttpErrorEvent) => void;
   onMessage: (event: WebViewMessageEvent) => void;
+  onIntercept: (event: WebViewInterceptEvent) => void;
   onShouldStartLoadWithRequest: (event: ShouldStartLoadRequestEvent) => void;
   showsHorizontalScrollIndicator?: boolean;
   showsVerticalScrollIndicator?: boolean;
@@ -1139,6 +1154,14 @@ export interface WebViewSharedProps extends ViewProps {
    * available on the event object, `event.nativeEvent.data`. `data` must be a string.
    */
   onMessage?: (event: WebViewMessageEvent) => void;
+
+   /**
+    * function that send data from ShouldInterceptRequest
+    * 
+    */
+  onIntercept?: (event: WebViewInterceptEvent) => void;
+
+  onInterceptCallback:(event:WebViewInterceptEvent) => OnInterceptReceive;
 
   /**
    * Function that is invoked when the `WebView` is loading.
