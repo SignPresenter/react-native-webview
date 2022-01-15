@@ -1044,24 +1044,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       } catch (JSONException e) {
         e.printStackTrace();
       }
-      //download file into base64
-      if(mimeType != null){
-        try {
-          URL httpUrl = new URL(request.getUrl().toString());
-          URLConnection urlConnection = httpUrl.openConnection();
-          InputStream is = urlConnection.getInputStream();
-          ByteArrayOutputStream baos = new ByteArrayOutputStream();
-          byte[] buffer = new byte[2048];
-          int read = 0;
-          while ((read = is.read(buffer, 0, buffer.length)) != -1) {
-            baos.write(buffer, 0, read);
-          }
-          baos.flush();
-          eventData.putString("file", Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT));
-        } catch (Exception e) {
-          Log.d("Error", e.toString());
-        }
-      }
+
       final boolean isJsDebugging = ((ReactContext) view.getContext()).getJavaScriptContextHolder().get() == 0;
       if (!isJsDebugging && rncWebView.mCatalystInstance != null) {
 
@@ -1091,6 +1074,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         //data from react native containing files...
         final ReadableMap data = lockObject.get();
         boolean cacheFile = false;
+        /*
         if(data != null){
           cacheFile = data.getBoolean("cache");
           Log.e("cacheFile", String.valueOf(cacheFile));
@@ -1127,9 +1111,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
               }
             }
           }else{
+            */
             RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
             return super.shouldInterceptRequest(view, request);
-          }
+          //}
         }
         RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
         return super.shouldInterceptRequest(view, request);
@@ -1137,6 +1122,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         rncWebView.dispatchEvent(rncWebView, new TopShouldInterceptRequestEvent(view.getId(), eventData));
         return super.shouldInterceptRequest(view, request);
       }
+
     }
 
     @Override

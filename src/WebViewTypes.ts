@@ -22,7 +22,7 @@ interface RNCWebViewUIManager<Commands extends string> extends UIManagerStatic {
   getViewManagerConfig: (
     name: string,
   ) => {
-    Commands: {[key in Commands]: number};
+    Commands: { [key in Commands]: number };
   };
 }
 
@@ -53,34 +53,34 @@ export type State = NormalState | ErrorState;
 // eslint-disable-next-line react/prefer-stateless-function
 declare class NativeWebViewIOSComponent extends Component<
   IOSNativeWebViewProps
-> {}
+> { }
 declare const NativeWebViewIOSBase: Constructor<NativeMethodsMixin> &
   typeof NativeWebViewIOSComponent;
-export class NativeWebViewIOS extends NativeWebViewIOSBase {}
+export class NativeWebViewIOS extends NativeWebViewIOSBase { }
 
 // eslint-disable-next-line react/prefer-stateless-function
 declare class NativeWebViewMacOSComponent extends Component<
   MacOSNativeWebViewProps
-> {}
+> { }
 declare const NativeWebViewMacOSBase: Constructor<NativeMethodsMixin> &
   typeof NativeWebViewMacOSComponent;
-export class NativeWebViewMacOS extends NativeWebViewMacOSBase {}
+export class NativeWebViewMacOS extends NativeWebViewMacOSBase { }
 
 // eslint-disable-next-line react/prefer-stateless-function
 declare class NativeWebViewAndroidComponent extends Component<
   AndroidNativeWebViewProps
-> {}
+> { }
 declare const NativeWebViewAndroidBase: Constructor<NativeMethodsMixin> &
   typeof NativeWebViewAndroidComponent;
-export class NativeWebViewAndroid extends NativeWebViewAndroidBase {}
+export class NativeWebViewAndroid extends NativeWebViewAndroidBase { }
 
 // eslint-disable-next-line react/prefer-stateless-function
 declare class NativeWebViewWindowsComponent extends Component<
   WindowsNativeWebViewProps
-> {}
+> { }
 declare const NativeWebViewWindowsBase: Constructor<NativeMethodsMixin> &
   typeof NativeWebViewWindowsComponent;
-export class NativeWebViewWindows extends NativeWebViewWindowsBase {}
+export class NativeWebViewWindows extends NativeWebViewWindowsBase { }
 
 export interface ContentInsetProp {
   top?: number;
@@ -104,12 +104,12 @@ export interface WebViewNativeProgressEvent extends WebViewNativeEvent {
 
 export interface WebViewNavigation extends WebViewNativeEvent {
   navigationType:
-    | 'click'
-    | 'formsubmit'
-    | 'backforward'
-    | 'reload'
-    | 'formresubmit'
-    | 'other';
+  | 'click'
+  | 'formsubmit'
+  | 'backforward'
+  | 'reload'
+  | 'formresubmit'
+  | 'other';
   mainDocumentURL?: string;
 }
 
@@ -132,11 +132,9 @@ export interface WebViewIntercept extends WebViewNativeEvent {
 }
 
 export interface OnInterceptReceive {
-  file:string,
-  offline:boolean,
-  mimetype:string,
-  url:string,
-  cache:boolean
+  file?: string,
+  mimetype?: string,
+  url: string,
 }
 
 export interface WebViewError extends WebViewNativeEvent {
@@ -976,16 +974,16 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    */
   androidHardwareAccelerationDisabled?: boolean;
 
-    /**
-   * https://developer.android.com/reference/android/webkit/WebView#setLayerType(int,%20android.graphics.Paint)
-   * Sets the layerType. Possible values are:
-   *
-   * - `'none'` (default)
-   * - `'software'`
-   * - `'hardware'`
-   *
-   * @platform android
-   */
+  /**
+ * https://developer.android.com/reference/android/webkit/WebView#setLayerType(int,%20android.graphics.Paint)
+ * Sets the layerType. Possible values are:
+ *
+ * - `'none'` (default)
+ * - `'software'`
+ * - `'hardware'`
+ *
+ * @platform android
+ */
   androidLayerType?: AndroidLayerType;
 
   /**
@@ -1052,7 +1050,7 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * @platform android
    */
   setBuiltInZoomControls?: boolean;
-   
+
   /**
    * Boolean value to control whether built-in zooms controls are displayed. Used only in Android.
    * Default to false
@@ -1061,7 +1059,7 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * @platform android
    */
   setDisplayZoomControls?: boolean;
-  
+
   /**
    * Allows to scroll inside the webview when used inside a scrollview.
    * Behaviour already existing on iOS.
@@ -1155,13 +1153,13 @@ export interface WebViewSharedProps extends ViewProps {
    */
   onMessage?: (event: WebViewMessageEvent) => void;
 
-   /**
-    * function that send data from ShouldInterceptRequest
-    * 
-    */
+  /**
+   * function that send data from ShouldInterceptRequest
+   * 
+   */
   onIntercept?: (event: WebViewInterceptEvent) => void;
 
-  onInterceptCallback:(event:WebViewInterceptEvent) => OnInterceptReceive;
+  onInterceptCallback: (event: WebViewInterceptEvent) => OnInterceptReceive;
 
   /**
    * Function that is invoked when the `WebView` is loading.
