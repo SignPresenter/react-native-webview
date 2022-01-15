@@ -1073,49 +1073,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         }
         //data from react native containing files...
         final ReadableMap data = lockObject.get();
-        boolean cacheFile = false;
-        /*
-        if(data != null){
-          cacheFile = data.getBoolean("cache");
-          Log.e("cacheFile", String.valueOf(cacheFile));
-          if(cacheFile){
-            boolean loadOfflineFile = data.getBoolean("offline");
-            if(data.getString("mimetype") != null && data.getString("file") != null && data.getString("url") != null) {
-              String callbackMimeType = data.getString("mimetype");
-              String fileUrl = data.getString("url");
-              if(!data.getString("file").equals("undefined")){
-                String callbackFileBase64 = data.getString("file");
-                Log.e("callbackMimeType", callbackMimeType);
-                String[] urlSplit = fileUrl.split("/");
-                String urlFileName = urlSplit[urlSplit.length-1];
-                Log.e("urlFileName", urlFileName);
-                final File checkIfFileExists = new File(rncWebView.getContext().getFilesDir(),urlFileName);
-                Log.e("checkIfFileExists", String.valueOf(checkIfFileExists.exists()));
-                RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
-                if(checkIfFileExists.exists() && loadOfflineFile){
-                  final byte[] fileBytesData;
-                  try {
-                    //read file from online
-                    fileBytesData = readFileToBytes(checkIfFileExists);
-                    return new WebResourceResponse(callbackMimeType, "UTF-8", new ByteArrayInputStream(fileBytesData));
-                  } catch (IOException e) {
-                    e.printStackTrace();
-                  }
-                }else{
-                  //save file for offline
-                  final byte[] fileBytesData = android.util.Base64.decode(callbackFileBase64, android.util.Base64.DEFAULT);
-                  saveBytesFile(fileBytesData, urlFileName, rncWebView.getContext());
-                  return new WebResourceResponse(callbackMimeType, "UTF-8", new ByteArrayInputStream(fileBytesData));
-                }
-                //Log.e("callbackFileBase64",callbackFileBase64);
-              }
-            }
-          }else{
-            */
-            RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
-            return super.shouldInterceptRequest(view, request);
-          //}
-        }
         RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
         return super.shouldInterceptRequest(view, request);
       } else {
