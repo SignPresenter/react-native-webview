@@ -1022,15 +1022,15 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
 
 
-    @Nullable
-    @Override
-    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-      final RNCWebView rncWebView = (RNCWebView) view;
-      WritableMap eventData = Arguments.createMap();
+    
+    private WritableMap getEventData(WebResourceRequest request)
+    {
       WritableMap header = Arguments.createMap();
       for (String key: request.getRequestHeaders().keySet()) {
         header.putString(key, request.getRequestHeaders().get(key));
       }
+
+      WritableMap eventData = Arguments.createMap();
       String mimeType = getMimeType(request.getUrl().toString());
       eventData.putString("url", request.getUrl().toString());
       eventData.putString("mimetype", mimeType);
@@ -1044,42 +1044,54 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       } catch (JSONException e) {
         e.printStackTrace();
       }
+      return eventData;
+    }
 
+    private void getRNResponse(WritableMap eventData, RNCWebView rncWebView)
+    {
+      final Pair<Integer, AtomicReference<ReadableMap>> lock = RNCWebViewModule.interceptOverrideLoadingLock.getNewLock();
+      final int lockIdentifier = lock.first;
+      final AtomicReference<ReadableMap> lockObject = lock.second;
+
+      eventData.putInt("lockIdentifier", lockIdentifier);
+      rncWebView.sendDirectMessage("onIntercept", eventData);
+
+      try {
+        assert lockObject != null;
+        synchronized (lockObject) {
+          final long startTime = SystemClock.elapsedRealtime();
+          while (lockObject.get() == null) {
+            if (SystemClock.elapsedRealtime() - startTime > INTERCEPT_WAITING_TIMEOUT) {
+              FLog.w(TAG, "Did not receive response to interceptOverrideLoadingLock in time");
+              RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
+            }
+            lockObject.wait(INTERCEPT_WAITING_TIMEOUT);
+          }
+        }
+      } catch (InterruptedException e) {
+        FLog.e(TAG, "interceptOverrideLoadingLock was interrupted while waiting for result.", e);
+        RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
+      }
+      //data from react native containing files...
+      final ReadableMap data = lockObject.get();
+      RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
+    }
+
+
+    @Nullable
+    @Override
+    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+      boolean intercept = request.getUrl().toString().startsWith("http");
+      final RNCWebView rncWebView = (RNCWebView) view;
+      WritableMap eventData = getEventData(request);
       final boolean isJsDebugging = ((ReactContext) view.getContext()).getJavaScriptContextHolder().get() == 0;
       if (!isJsDebugging && rncWebView.mCatalystInstance != null) {
-
-        final Pair<Integer, AtomicReference<ReadableMap>> lock = RNCWebViewModule.interceptOverrideLoadingLock.getNewLock();
-        final int lockIdentifier = lock.first;
-        final AtomicReference<ReadableMap> lockObject = lock.second;
-
-        eventData.putInt("lockIdentifier", lockIdentifier);
-        rncWebView.sendDirectMessage("onIntercept", eventData);
-
-        try {
-          assert lockObject != null;
-          synchronized (lockObject) {
-            final long startTime = SystemClock.elapsedRealtime();
-            while (lockObject.get() == null) {
-              if (SystemClock.elapsedRealtime() - startTime > INTERCEPT_WAITING_TIMEOUT) {
-                FLog.w(TAG, "Did not receive response to interceptOverrideLoadingLock in time");
-                RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
-              }
-              lockObject.wait(INTERCEPT_WAITING_TIMEOUT);
-            }
-          }
-        } catch (InterruptedException e) {
-          FLog.e(TAG, "interceptOverrideLoadingLock was interrupted while waiting for result.", e);
-          RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
-        }
-        //data from react native containing files...
-        final ReadableMap data = lockObject.get();
-        RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
+        if (intercept) getRNResponse(eventData, rncWebView);
         return super.shouldInterceptRequest(view, request);
       } else {
         rncWebView.dispatchEvent(rncWebView, new TopShouldInterceptRequestEvent(view.getId(), eventData));
         return super.shouldInterceptRequest(view, request);
       }
-
     }
 
     @Override
