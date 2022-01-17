@@ -1047,7 +1047,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       return eventData;
     }
 
-    private void getRNResponse(WritableMap eventData, RNCWebView rncWebView)
+    private ReadableMap getRNResponse(WritableMap eventData, RNCWebView rncWebView)
     {
       final Pair<Integer, AtomicReference<ReadableMap>> lock = RNCWebViewModule.interceptOverrideLoadingLock.getNewLock();
       final int lockIdentifier = lock.first;
@@ -1075,8 +1075,25 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       //data from react native containing files...
       final ReadableMap data = lockObject.get();
       RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
+      return data;
     }
 
+    private WebResourceResponse serveCachedCopy(File cachedFile, String mimeType)
+    {
+      try {
+        WebResourceResponse resp = new WebResourceResponse(mimeType, "utf-8", new FileInputStream(cachedFile));
+        Map<String, String> headers = new HashMap<String, String>();
+        headers.put("cache-control", "public, max-age=15768000");
+        headers.put("Access-Control-Allow-Origin", "*");
+
+        resp.setResponseHeaders(headers);
+        Map<String, String> a = resp.getResponseHeaders();
+        return resp;
+      } catch (FileNotFoundException e) {
+        //Log.d(LOG_TAG, "Error loading cached file: " + cachedFile.getPath() + " : "  + e.getMessage(), e);
+        return null;
+      }
+    }
 
     @Nullable
     @Override
@@ -1086,7 +1103,15 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       WritableMap eventData = getEventData(request);
       final boolean isJsDebugging = ((ReactContext) view.getContext()).getJavaScriptContextHolder().get() == 0;
       if (!isJsDebugging && rncWebView.mCatalystInstance != null) {
-        if (intercept) getRNResponse(eventData, rncWebView);
+        if (intercept) {
+          ReadableMap response = getRNResponse(eventData, rncWebView);
+          String file = response.getString("file");
+          String mimeType = response.getString("mimeType");
+          if (file!=null && mimeType!=null) {
+            File cachedFile = new File(file);
+            return serveCachedCopy(cachedFile, mimeType);
+          }
+        }
         return super.shouldInterceptRequest(view, request);
       } else {
         rncWebView.dispatchEvent(rncWebView, new TopShouldInterceptRequestEvent(view.getId(), eventData));
@@ -2010,3 +2035,4 @@ class BasicAuthCredential {
     this.password = password;
   }
 }
+
