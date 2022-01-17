@@ -86,7 +86,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
 
   webViewRef = React.createRef<NativeWebViewAndroid>();
 
-  messagingModuleName = `WebViewMessageHandler${uniqueRef+=1}`;
+  messagingModuleName = `WebViewMessageHandler${uniqueRef += 1}`;
 
   componentDidMount = () => {
     BatchedBridge.registerCallableModule(this.messagingModuleName, this);
@@ -155,25 +155,25 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
 
   clearFormData = () => {
     UIManager.dispatchViewManagerCommand(
-       this.getWebViewHandle(),
-       this.getCommands().clearFormData,
-        undefined,
+      this.getWebViewHandle(),
+      this.getCommands().clearFormData,
+      undefined,
     );
   }
 
   clearCache = (includeDiskFiles: boolean) => {
     UIManager.dispatchViewManagerCommand(
-       this.getWebViewHandle(),
-       this.getCommands().clearCache,
-       [includeDiskFiles],
+      this.getWebViewHandle(),
+      this.getCommands().clearCache,
+      [includeDiskFiles],
     );
   };
 
   clearHistory = () => {
     UIManager.dispatchViewManagerCommand(
-       this.getWebViewHandle(),
-       this.getCommands().clearHistory,
-        undefined,
+      this.getWebViewHandle(),
+      this.getCommands().clearHistory,
+      undefined,
     );
   };
 
@@ -285,12 +285,11 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
   onIntercept = (event: WebViewInterceptEvent) => {
     const { onInterceptCallback } = this.props;
     if (onInterceptCallback) {
-      const result = onInterceptCallback(event);
-      const { nativeEvent} = event;
-      const {lockIdentifier} = nativeEvent;
-      //if(result.offline){
-        NativeModules.RNCWebView.onInterceptCallback(result,lockIdentifier);
-      //}    
+      onInterceptCallback(event).then(result => {
+        const { nativeEvent } = event;
+        const { lockIdentifier } = nativeEvent;
+        NativeModules.RNCWebView.onInterceptCallback(result, lockIdentifier);
+      })
     }
   };
 
