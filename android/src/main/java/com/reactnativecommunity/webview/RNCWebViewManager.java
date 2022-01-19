@@ -1145,7 +1145,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           else {
             ReadableMap response = getRNResponse(eventData, rncWebView);
             String file = response.getString("file");
-            String mimeType = response.getString("mimeType");
+            String mimeType = response.getString("mimetype");
             if (file != null && mimeType != null) {
               File cachedFile = new File(file);
               return serveCachedCopy(cachedFile, mimeType);
