@@ -1115,6 +1115,23 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       }
     }
 
+    private WebResourceResponse getOptionsResponse()
+    {
+      try {
+        WebResourceResponse resp = new WebResourceResponse("", "utf-8", null);
+        Map<String, String> headers = new HashMap<String, String>();
+        headers.put("cache-control", "public, max-age=15768000");
+        headers.put("Access-Control-Allow-Origin", "*");
+        resp.setResponseHeaders(headers);
+        Map<String, String> a = resp.getResponseHeaders();
+        return resp;
+      } catch (Exception e){
+        //Log.d(LOG_TAG, "Error loading cached file: " + cachedFile.getPath() + " : "  + e.getMessage(), e);
+        return null;
+      }
+    }
+
+
     @Nullable
     @Override
     public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
@@ -1124,12 +1141,15 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       final boolean isJsDebugging = ((ReactContext) view.getContext()).getJavaScriptContextHolder().get() == 0;
       if (!isJsDebugging && rncWebView.mCatalystInstance != null) {
         if (intercept) {
-          ReadableMap response = getRNResponse(eventData, rncWebView);
-          String file = response.getString("file");
-          String mimeType = response.getString("mimeType");
-          if (file!=null && mimeType!=null) {
-            File cachedFile = new File(file);
-            return serveCachedCopy(cachedFile, mimeType);
+          if (request.getMethod().toLowerCase()=="options") return getOptionsResponse();
+          else {
+            ReadableMap response = getRNResponse(eventData, rncWebView);
+            String file = response.getString("file");
+            String mimeType = response.getString("mimeType");
+            if (file != null && mimeType != null) {
+              File cachedFile = new File(file);
+              return serveCachedCopy(cachedFile, mimeType);
+            }
           }
         }
         return super.shouldInterceptRequest(view, request);
