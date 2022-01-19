@@ -41,6 +41,11 @@ declare class WebView<P = {}> extends Component<WebViewProps & P> {
      * Posts a message to WebView.
      */
     postMessage: (message: string) => void;
+
+     /**
+     * Posts a intercept to WebView.
+     */
+    postIntercept: (message: string) => void;
     
      /**
      * (Android only)

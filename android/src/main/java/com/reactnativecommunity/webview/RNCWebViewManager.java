@@ -17,6 +17,7 @@ import android.os.Environment;
 import android.os.Message;
 import android.os.SystemClock;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -30,6 +31,7 @@ import android.webkit.DownloadListener;
 import android.webkit.GeolocationPermissions;
 import android.webkit.HttpAuthHandler;
 import android.webkit.JavascriptInterface;
+import android.webkit.MimeTypeMap;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.SslErrorHandler;
 import android.webkit.PermissionRequest;
@@ -83,15 +85,27 @@ import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
 import com.reactnativecommunity.webview.events.TopLoadingProgressEvent;
 import com.reactnativecommunity.webview.events.TopLoadingStartEvent;
 import com.reactnativecommunity.webview.events.TopMessageEvent;
+import com.reactnativecommunity.webview.events.TopShouldInterceptRequestEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
 import com.reactnativecommunity.webview.events.TopRenderProcessGoneEvent;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -158,6 +172,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   protected boolean mAllowsFullscreenVideo = false;
   protected @Nullable String mUserAgent = null;
   protected @Nullable String mUserAgentWithApplicationName = null;
+
+  //waiting time for intercept
+  protected static final int INTERCEPT_WAITING_TIMEOUT = 1800000;
+
 
   public RNCWebViewManager() {
     mWebViewConfig = new WebViewConfig() {
@@ -909,6 +927,201 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         new TopLoadingStartEvent(
           webView.getId(),
           createWebViewEvent(webView, url)));
+    }
+
+    /**
+     * Get mimeType
+     * @param url
+     * @return
+     */
+    public String getMimeType(String url) {
+      String type = null;
+      String extension = MimeTypeMap.getFileExtensionFromUrl(url);
+      if (extension != null) {
+        switch (extension) {
+          case "mp4":
+            return "video/mp4";
+          case "json":
+            return "application/json";
+          case "png":
+            return "image/png";
+          case "jpeg":
+            return "image/jpeg";
+          case "jpg":
+            return "image/jpg";
+          case "js":
+            return "text/javascript";
+          case "woff":
+            return "application/font-woff";
+          case "woff2":
+            return "application/font-woff2";
+          case "ttf":
+            return "application/x-font-ttf";
+          case "svg":
+            return "image/svg+xml";
+        }
+        type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+      }
+      return type;
+    }
+
+    /**
+     * read file
+     * @param f
+     * @return
+     * @throws IOException
+     */
+    private byte[] readFileToBytes(File f) throws IOException {
+      int size = (int) f.length();
+      byte bytes[] = new byte[size];
+      byte tmpBuff[] = new byte[size];
+      FileInputStream fis= new FileInputStream(f);
+      try {
+
+        int read = fis.read(bytes, 0, size);
+        if (read < size) {
+          int remain = size - read;
+          while (remain > 0) {
+            read = fis.read(tmpBuff, 0, remain);
+            System.arraycopy(tmpBuff, 0, bytes, size - remain, read);
+            remain -= read;
+          }
+        }
+      }  catch (IOException e){
+        e.printStackTrace();
+      } finally {
+        fis.close();
+      }
+
+      return bytes;
+    }
+
+    /**
+     * save file
+     * @param data
+     * @param fileName
+     * @param context
+     */
+    private void saveBytesFile(byte [] data, String fileName, Context context){
+      FileOutputStream fileOutputStream = null;
+      BufferedOutputStream  bufferedOutputStream = null;
+      try {
+        final File file = new File(context.getFilesDir(),fileName);
+        if (!file.exists()) {
+          boolean createFile = file.createNewFile();
+        }
+        fileOutputStream = new FileOutputStream(file);
+        bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
+        bufferedOutputStream.write(data);
+      } catch (IOException e) {
+        e.printStackTrace();
+      } finally {
+        if(bufferedOutputStream !=  null){
+          try {
+            bufferedOutputStream.close();
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+    }
+
+
+    
+    private WritableMap getEventData(WebResourceRequest request)
+    {
+      WritableMap header = Arguments.createMap();
+      for (String key: request.getRequestHeaders().keySet()) {
+        header.putString(key, request.getRequestHeaders().get(key));
+      }
+
+      WritableMap eventData = Arguments.createMap();
+      String mimeType = getMimeType(request.getUrl().toString());
+      eventData.putString("url", request.getUrl().toString());
+      eventData.putString("mimetype", mimeType);
+      eventData.putString("method", request.getMethod().toString());
+      try {
+        JSONObject obj  = new JSONObject(header.toString());
+        JSONObject getHeaderObj = obj.optJSONObject("NativeMap");
+        if(getHeaderObj != null){
+          eventData.putString("header",getHeaderObj.toString());
+        }
+      } catch (JSONException e) {
+        e.printStackTrace();
+      }
+      return eventData;
+    }
+
+    private ReadableMap getRNResponse(WritableMap eventData, RNCWebView rncWebView)
+    {
+      final Pair<Integer, AtomicReference<ReadableMap>> lock = RNCWebViewModule.interceptOverrideLoadingLock.getNewLock();
+      final int lockIdentifier = lock.first;
+      final AtomicReference<ReadableMap> lockObject = lock.second;
+
+      eventData.putInt("lockIdentifier", lockIdentifier);
+      rncWebView.sendDirectMessage("onIntercept", eventData);
+
+      try {
+        assert lockObject != null;
+        synchronized (lockObject) {
+          final long startTime = SystemClock.elapsedRealtime();
+          while (lockObject.get() == null) {
+            if (SystemClock.elapsedRealtime() - startTime > INTERCEPT_WAITING_TIMEOUT) {
+              FLog.w(TAG, "Did not receive response to interceptOverrideLoadingLock in time");
+              RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
+            }
+            lockObject.wait(INTERCEPT_WAITING_TIMEOUT);
+          }
+        }
+      } catch (InterruptedException e) {
+        FLog.e(TAG, "interceptOverrideLoadingLock was interrupted while waiting for result.", e);
+        RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
+      }
+      //data from react native containing files...
+      final ReadableMap data = lockObject.get();
+      RNCWebViewModule.interceptOverrideLoadingLock.removeLock(lockIdentifier);
+      return data;
+    }
+
+    private WebResourceResponse serveCachedCopy(File cachedFile, String mimeType)
+    {
+      try {
+        WebResourceResponse resp = new WebResourceResponse(mimeType, "utf-8", new FileInputStream(cachedFile));
+        Map<String, String> headers = new HashMap<String, String>();
+        headers.put("cache-control", "public, max-age=15768000");
+        headers.put("Access-Control-Allow-Origin", "*");
+
+        resp.setResponseHeaders(headers);
+        Map<String, String> a = resp.getResponseHeaders();
+        return resp;
+      } catch (FileNotFoundException e) {
+        //Log.d(LOG_TAG, "Error loading cached file: " + cachedFile.getPath() + " : "  + e.getMessage(), e);
+        return null;
+      }
+    }
+
+    @Nullable
+    @Override
+    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+      boolean intercept = request.getUrl().toString().startsWith("http");
+      final RNCWebView rncWebView = (RNCWebView) view;
+      WritableMap eventData = getEventData(request);
+      final boolean isJsDebugging = ((ReactContext) view.getContext()).getJavaScriptContextHolder().get() == 0;
+      if (!isJsDebugging && rncWebView.mCatalystInstance != null) {
+        if (intercept) {
+          ReadableMap response = getRNResponse(eventData, rncWebView);
+          String file = response.getString("file");
+          String mimeType = response.getString("mimeType");
+          if (file!=null && mimeType!=null) {
+            File cachedFile = new File(file);
+            return serveCachedCopy(cachedFile, mimeType);
+          }
+        }
+        return super.shouldInterceptRequest(view, request);
+      } else {
+        rncWebView.dispatchEvent(rncWebView, new TopShouldInterceptRequestEvent(view.getId(), eventData));
+        return super.shouldInterceptRequest(view, request);
+      }
     }
 
     @Override
@@ -1691,6 +1904,40 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       }
     }
 
+    public void onIntercept(String message) {
+      ReactContext reactContext = (ReactContext) this.getContext();
+      RNCWebView mContext = this;
+
+      if (mRNCWebViewClient != null) {
+        WebView webView = this;
+        webView.post(new Runnable() {
+          @Override
+          public void run() {
+            if (mRNCWebViewClient == null) {
+              return;
+            }
+            WritableMap data = mRNCWebViewClient.createWebViewEvent(webView, webView.getUrl());
+            data.putString("data", message);
+
+            if (mCatalystInstance != null) {
+              mContext.sendDirectMessage("onIntercept", data);
+            } else {
+              dispatchEvent(webView, new TopMessageEvent(webView.getId(), data));
+            }
+          }
+        });
+      } else {
+        WritableMap eventData = Arguments.createMap();
+        eventData.putString("data", message);
+
+        if (mCatalystInstance != null) {
+          this.sendDirectMessage("onIntercept", eventData);
+        } else {
+          dispatchEvent(this, new TopMessageEvent(this.getId(), eventData));
+        }
+      }
+    }
+
     protected void sendDirectMessage(final String method, WritableMap data) {
       WritableNativeMap event = new WritableNativeMap();
       event.putMap("nativeEvent", data);
@@ -1731,8 +1978,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     protected void dispatchEvent(WebView webView, Event event) {
       ReactContext reactContext = (ReactContext) webView.getContext();
-      EventDispatcher eventDispatcher =
-        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher();
+      EventDispatcher eventDispatcher = reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher();
       eventDispatcher.dispatchEvent(event);
     }
 
@@ -1764,6 +2010,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       public void postMessage(String message) {
         mContext.onMessage(message);
       }
+
+      @JavascriptInterface
+      public void postIntercept(String message) {
+        mContext.onIntercept(message);
+      }
     }
 
     protected static class ProgressChangedFilter {
@@ -1789,3 +2040,4 @@ class BasicAuthCredential {
     this.password = password;
   }
 }
+

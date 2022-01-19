@@ -31,6 +31,7 @@ import {
   WebViewErrorEvent,
   WebViewHttpErrorEvent,
   WebViewMessageEvent,
+  WebViewInterceptEvent,
   RNCWebViewUIManagerWindows,
   State,
 } from './WebViewTypes';
@@ -192,6 +193,13 @@ export default class WebView extends React.Component<WebViewSharedProps, State> 
     }
   }
 
+  onIntercept = (event: WebViewInterceptEvent) => {
+    const { onIntercept } = this.props;
+    if (onIntercept) {
+      onIntercept(event);
+    }
+  };
+
   onHttpError = (event: WebViewHttpErrorEvent) => {
     const { onHttpError } = this.props;
     if (onHttpError) {
@@ -202,6 +210,7 @@ export default class WebView extends React.Component<WebViewSharedProps, State> 
   render () {
     const {
       nativeConfig = {},
+      onIntercept,
       onMessage,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
       originWhitelist,
@@ -260,6 +269,7 @@ export default class WebView extends React.Component<WebViewSharedProps, State> 
         onLoadingStart={this.onLoadingStart}
         onHttpError={this.onHttpError}
         onMessage={this.onMessage}
+        onIntercept={this.onIntercept}
         onScroll={this.props.onScroll}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         source={resolveAssetSource(this.props.source as ImageSourcePropType)}

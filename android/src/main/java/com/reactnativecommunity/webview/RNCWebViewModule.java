@@ -29,6 +29,7 @@ import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.module.annotations.ReactModule;
 import com.facebook.react.modules.core.PermissionAwareActivity;
 import com.facebook.react.modules.core.PermissionListener;
@@ -81,7 +82,30 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
     }
   }
 
+  protected static class InterceptOverrideLoadingLock {
+    private int nextLockIdentifier = 1;
+    private final HashMap<Integer, AtomicReference<ReadableMap>> shouldOverrideLocks = new HashMap<>();
+
+    public synchronized Pair<Integer, AtomicReference<ReadableMap>> getNewLock() {
+      final int lockIdentifier = nextLockIdentifier++;
+      final AtomicReference<ReadableMap> shouldOverride = new AtomicReference<>();
+      shouldOverrideLocks.put(lockIdentifier, shouldOverride);
+      return new Pair<>(lockIdentifier, shouldOverride);
+    }
+
+    @Nullable
+    public synchronized AtomicReference<ReadableMap> getLock(Integer lockIdentifier) {
+      return shouldOverrideLocks.get(lockIdentifier);
+    }
+
+    public synchronized void removeLock(Integer lockIdentifier) {
+      shouldOverrideLocks.remove(lockIdentifier);
+    }
+  }
+
+
   protected static final ShouldOverrideUrlLoadingLock shouldOverrideUrlLoadingLock = new ShouldOverrideUrlLoadingLock();
+  protected static final InterceptOverrideLoadingLock interceptOverrideLoadingLock = new InterceptOverrideLoadingLock();
 
   private enum MimeType {
     DEFAULT("*/*"),
@@ -127,7 +151,7 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
 
   @ReactMethod
   public void isFileUploadSupported(final Promise promise) {
-    Boolean result = false;
+    boolean result = false;
     int current = Build.VERSION.SDK_INT;
     if (current >= Build.VERSION_CODES.LOLLIPOP) {
       result = true;
@@ -144,6 +168,17 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
     if (lockObject != null) {
       synchronized (lockObject) {
         lockObject.set(shouldStart ? ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState.DO_NOT_OVERRIDE : ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState.SHOULD_OVERRIDE);
+        lockObject.notify();
+      }
+    }
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  public void onInterceptCallback(final ReadableMap data,final int lockIdentifier) {
+    final AtomicReference<ReadableMap> lockObject = interceptOverrideLoadingLock.getLock(lockIdentifier);
+    if (lockObject != null) {
+      synchronized (lockObject) {
+        lockObject.set(data);
         lockObject.notify();
       }
     }

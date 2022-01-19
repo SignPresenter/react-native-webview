@@ -29,6 +29,7 @@ import {
   ViewManager,
   State,
   RNCWebViewUIManagerIOS,
+  WebViewInterceptEvent
 } from './WebViewTypes';
 
 import styles from './WebView.styles';
@@ -241,6 +242,13 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     }
   };
 
+  onIntercept = (event: WebViewInterceptEvent) => {
+    const { onIntercept } = this.props;
+    if (onIntercept) {
+      onIntercept(event);
+    }
+  };
+
   onLoadingProgress = (event: WebViewProgressEvent) => {
     const { onLoadProgress } = this.props;
     if (onLoadProgress) {
@@ -289,6 +297,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     const {
       decelerationRate: decelerationRateProp,
       nativeConfig = {},
+      onIntercept,
       onMessage,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
       originWhitelist,
@@ -356,6 +365,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
         injectedJavaScriptForMainFrameOnly={injectedJavaScriptForMainFrameOnly}
         injectedJavaScriptBeforeContentLoadedForMainFrameOnly={injectedJavaScriptBeforeContentLoadedForMainFrameOnly}
         ref={this.webViewRef}
+        onIntercept={this.onIntercept}
         // TODO: find a better way to type this.
         source={resolveAssetSource(this.props.source as ImageSourcePropType)}
         style={webViewStyles}
