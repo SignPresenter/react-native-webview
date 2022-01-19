@@ -788,6 +788,14 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       int initialRequestedOrientation = activity.getRequestedOrientation();
 
       mWebChromeClient = new RNCWebChromeClient(reactContext, webView) {
+
+        @Override
+        public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+          Log.d("MyApplication", consoleMessage.message() + " -- From line " +
+            consoleMessage.lineNumber() + " of " + consoleMessage.sourceId());
+          return true;
+        }
+
         @Override
         public Bitmap getDefaultVideoPoster() {
           return Bitmap.createBitmap(50, 50, Bitmap.Config.ARGB_8888);
@@ -877,6 +885,13 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         @Override
         public Bitmap getDefaultVideoPoster() {
           return Bitmap.createBitmap(50, 50, Bitmap.Config.ARGB_8888);
+        }
+
+        @Override
+        public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+          Log.d("MyApplication", consoleMessage.message() + " -- From line " +
+            consoleMessage.lineNumber() + " of " + consoleMessage.sourceId());
+          return true;
         }
       };
 
