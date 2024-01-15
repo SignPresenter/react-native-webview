@@ -25,8 +25,8 @@ public class CustomWebViewManager extends RNCWebViewManager {
   }
 
   @Override
-  protected RNCWebView createRNCWebViewInstance(ThemedReactContext reactContext) {
-    return new CustomWebView(reactContext);
+  protected RNCWebView createViewInstance(ThemedReactContext reactContext) {
+    return super.createViewInstance(reactContext, new CustomWebView(reactContext));
   }
 
   @Override
@@ -35,13 +35,13 @@ public class CustomWebViewManager extends RNCWebViewManager {
   }
 
   @Override
-  protected void addEventEmitters(ThemedReactContext reactContext, WebView view) {
+  protected void addEventEmitters(ThemedReactContext reactContext, RNCWebView view) {
     view.setWebViewClient(new CustomWebViewClient());
   }
 }
 ```
 
-You'll need to follow the usual steps to [register the module](native-modules-android.md#register-the-module).
+You'll need to follow the usual steps to [register the module](https://reactnative.dev/docs/native-modules-android#register-the-module-android-specific).
 
 ### Adding New Properties
 
@@ -215,3 +215,8 @@ export default class CustomWebView extends Component {
   }
 }
 ```
+## Translations
+
+This file is available in:
+- [Brazilian portuguese](Custom-Android.portuguese.md)
+- [Italian](Custom-Android.italian.md)

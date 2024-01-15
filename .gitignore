@@ -4,6 +4,7 @@
 
 # Xcode
 #
+.xcode.env
 build/
 *.pbxuser
 !default.pbxuser
@@ -59,9 +60,3 @@ lib/
 .settings/
 msbuild.binlog
 example/msbuild.binlog
-
-android/build/
-android/app/build/
-
-example/android/build
-example/android/app/build

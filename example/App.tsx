@@ -20,6 +20,10 @@ import LocalPageLoad from './examples/LocalPageLoad';
 import Messaging from './examples/Messaging';
 import NativeWebpage from './examples/NativeWebpage';
 import ApplePay from './examples/ApplePay';
+import CustomMenu from './examples/CustomMenu';
+import OpenWindow from './examples/OpenWindow';
+import SuppressMenuItems from './examples/Suppress';
+import ClearData from './examples/ClearData';
 
 const TESTS = {
   Messaging: {
@@ -52,6 +56,14 @@ const TESTS = {
     description: 'Background color test',
     render() {
       return <Background />;
+    },
+  },
+  ClearData: {
+    title: 'ClearData',
+    testId: 'clearData',
+    description: 'Clear data test',
+    render() {
+      return <ClearData />;
     },
   },
   Downloads: {
@@ -101,11 +113,35 @@ const TESTS = {
     render() {
       return <ApplePay />;
     },
+  },
+  CustomMenu: {
+    title: 'Custom Menu',
+    testId: 'CustomMenu',
+    description: 'Test to custom context menu shown on highlighting text',
+    render() {
+      return <CustomMenu />;
+    },
+  },
+  OpenWindow: {
+    title: 'Open Window',
+    testId: 'OpenWindow',
+    description: 'Test to intercept new window events',
+    render() {
+      return <OpenWindow />;
+    },
+  },
+  SuppressMenuItems: {
+    title: 'SuppressMenuItems',
+    testId: 'SuppressMenuItems',
+    description: 'SuppressMenuItems in editable content',
+    render() {
+      return <SuppressMenuItems />;
+    }
   }
 };
 
-type Props = {};
-type State = {restarting: boolean; currentTest: Object};
+interface Props {}
+interface State {restarting: boolean; currentTest: Object}
 
 export default class App extends Component<Props, State> {
   state = {
@@ -165,14 +201,12 @@ export default class App extends Component<Props, State> {
             title="LocalPageLoad"
             onPress={() => this._changeTest('PageLoad')}
           />
-          {Platform.OS == 'ios' && (
-            <Button
-              testID="testType_downloads"
-              title="Downloads"
-              onPress={() => this._changeTest('Downloads')}
-            />
-          )}
-          {Platform.OS === 'android' && (
+          <Button
+            testID="testType_downloads"
+            title="Downloads"
+            onPress={() => this._changeTest('Downloads')}
+          />
+          {(Platform.OS === 'android' || Platform.OS === 'macos') && (
             <Button
               testID="testType_uploads"
               title="Uploads"
@@ -196,6 +230,26 @@ export default class App extends Component<Props, State> {
                   onPress={() => this._changeTest('ApplePay')}
               />
           )}
+          <Button
+            testID="testType_customMenu"
+            title="CustomMenu"
+            onPress={() => this._changeTest('CustomMenu')}
+          />
+          <Button
+            testID="testType_openwindow"
+            title="OpenWindow"
+            onPress={() => this._changeTest('OpenWindow')}
+          />
+          <Button
+            testID="testType_suppressMenuItems"
+            title="SuppressMenuItems"
+            onPress={() => this._changeTest('SuppressMenuItems')}
+          />
+          <Button
+            testID="testType_clearData"
+            title="ClearData"
+            onPress={() => this._changeTest('ClearData')}
+          />
         </View>
 
         {restarting ? null : (
